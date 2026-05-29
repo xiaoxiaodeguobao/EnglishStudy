@@ -369,9 +369,9 @@ export function DailyLearningPage() {
               {availableContexts.length > 1 && (
                 <div className="mb-4">
                   <ContextFilter
-                    availableContexts={availableContexts}
+                    contexts={availableContexts}
                     selectedContexts={selectedContexts}
-                    onContextChange={handleContextFilterChange}
+                    onSelectionChange={handleContextFilterChange}
                   />
                 </div>
               )}

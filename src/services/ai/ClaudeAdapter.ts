@@ -817,7 +817,7 @@ Return ONLY the JSON array, no additional text.`;
       }
 
       // Use extractJSON utility to handle various response formats
-      const parsed = extractJSON(content);
+      const parsed = extractJSON(content) as Record<string, unknown> | null;
 
       if (!parsed) {
         ClaudeLogger.error('Failed to extract JSON from Claude response', { content });
