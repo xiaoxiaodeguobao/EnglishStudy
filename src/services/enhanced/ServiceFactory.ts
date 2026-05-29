@@ -169,6 +169,11 @@ export class ServiceFactoryImpl implements ServiceFactory {
       }
     }
 
+    // TypeScript type guard: at this point aiService is guaranteed to be non-null
+    if (!this.aiService) {
+      throw new Error('Failed to create AI service instance');
+    }
+
     return this.aiService;
   }
 
@@ -199,8 +204,7 @@ export class ServiceFactoryImpl implements ServiceFactory {
 
     if (!this.qualityAssessor) {
       console.info('Creating QualityAssessor instance');
-      const aiService = this.getAIService();
-      this.qualityAssessor = new QualityAssessorImpl(aiService);
+      this.qualityAssessor = new QualityAssessorImpl();
     }
 
     return this.qualityAssessor;
@@ -220,7 +224,6 @@ export class ServiceFactoryImpl implements ServiceFactory {
       });
 
       this.cacheManager = new CacheManagerImpl(
-        storageService,
         config.cache.expirationDays
       );
     }
@@ -268,13 +271,11 @@ export class ServiceFactoryImpl implements ServiceFactory {
 
       const aiService = this.getAIService();
       const contextAnalyzer = this.getContextAnalyzer();
-      const qualityAssessor = this.getQualityAssessor();
       const cacheManager = this.getCacheManager();
 
       this.sentenceChainService = new SentenceChainServiceImpl(
         aiService,
         contextAnalyzer,
-        qualityAssessor,
         cacheManager
       );
     }

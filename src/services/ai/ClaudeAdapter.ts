@@ -342,6 +342,135 @@ export class ClaudeAdapter implements AIService {
   }
 
   /**
+   * Generate a complete word list with associations and sentence chains
+   * 
+   * Requirements 3.1, 3.2, 3.5, 4.1, 5.1, 5.2
+   * 
+   * @param request - Word list generation request parameters
+   * @returns Promise resolving to generated words, associations, sentence chains, and metadata
+   * @throws AIServiceError when generation fails
+   */
+  async generateWordList(request: WordListGenerationRequest): Promise<WordListGenerationResponse> {
+    const prompt = this.buildWordListPrompt(request);
+    const startTime = Date.now();
+
+    ClaudeLogger.info('Starting word list generation', {
+      count: request.count,
+      usedWordsCount: request.usedWords.length,
+      theme: request.theme,
+      difficulty: request.difficulty,
+      model: this.config.model,
+    });
+
+    try {
+      const result = await withRetry(
+        async () => {
+          ClaudeLogger.info('Making Claude API request for word list', {
+            count: request.count,
+            apiUrl: this.config.apiUrl,
+          });
+
+          const response = await httpClient.post<ClaudeMessageResponse>(
+            `${this.config.apiUrl}/messages`,
+            {
+              model: this.config.model,
+              max_tokens: 6000,
+              temperature: 0.9,
+              messages: [
+                {
+                  role: 'user',
+                  content: prompt,
+                },
+              ],
+            },
+            {
+              headers: {
+                'x-api-key': this.config.apiKey,
+                'anthropic-version': '2023-06-01',
+                'Content-Type': 'application/json',
+              },
+              timeout: this.config.timeout,
+              retries: this.config.maxRetries,
+            }
+          );
+
+          ClaudeLogger.info('Claude API request successful for word list', {
+            count: request.count,
+            tokensUsed: response.data.usage.input_tokens + response.data.usage.output_tokens,
+            stopReason: response.data.stop_reason,
+          });
+
+          const parsed = this.parseWordListFromResponse(response.data);
+
+          return {
+            words: parsed.words,
+            associations: parsed.associations,
+            sentenceChains: parsed.sentenceChains,
+            metadata: {
+              model: this.config.model,
+              tokensUsed: response.data.usage.input_tokens + response.data.usage.output_tokens,
+              generationTime: Date.now() - startTime,
+            },
+          };
+        },
+        {
+          maxAttempts: 3,
+          backoffMs: 1000,
+          backoffMultiplier: 2,
+          onRetry: (error, attempt, delayMs) => {
+            ClaudeLogger.warn('Retrying word list generation', {
+              count: request.count,
+              attempt,
+              delayMs,
+              error: error.message,
+            });
+          },
+        }
+      );
+
+      ClaudeLogger.info('Word list generation completed successfully', {
+        count: request.count,
+        wordCount: result.value.words.length,
+        associationCount: result.value.associations.length,
+        sentenceChainCount: result.value.sentenceChains.length,
+        totalTimeMs: result.value.metadata.generationTime,
+        attempts: result.attempts,
+      });
+
+      return result.value;
+    } catch (error: any) {
+      if (error instanceof RetryExhaustedError) {
+        ClaudeLogger.error('Word list generation failed after all retries', {
+          count: request.count,
+          attempts: error.attempts,
+          lastError: error.lastError.message,
+          allErrors: error.errors.map(e => e.message),
+        });
+
+        throw new AIServiceError(
+          `Claude API call failed after ${error.attempts} attempts: ${error.lastError.message}`,
+          'claude',
+          (error.lastError as any).status,
+          error.lastError
+        );
+      }
+
+      ClaudeLogger.error('Word list generation failed', {
+        count: request.count,
+        error: error.message,
+        stack: error.stack,
+      });
+
+      throw new AIServiceError(
+        `Claude API call failed: ${error.message}`,
+        'claude',
+        error.status,
+        error
+      );
+    }
+  }
+
+  /**
    * Validate service configuration and connectivity
    * 
    * Requirement 6.1: Service validation capability
@@ -436,6 +565,77 @@ Format your response as a JSON array:
 ]
 
 Return ONLY the JSON array, no additional text.`;
+  }
+
+  /**
+   * Build prompt for word list generation
+   * 
+   * Requirements 3.1, 3.2, 3.5, 4.1, 5.1, 5.2
+   * 
+   * @param request - Word list generation request parameters
+   * @returns Formatted prompt string
+   */
+  private buildWordListPrompt(request: WordListGenerationRequest): string {
+    const { count, usedWords, theme, difficulty } = request;
+
+    const themeClause = theme ? ` related to the theme "${theme}"` : '';
+    const difficultyClause = difficulty ? ` at a ${difficulty} difficulty level` : '';
+    const usedWordsClause =
+      usedWords.length > 0
+        ? `\nDo NOT use any of these already-learned words: ${usedWords.join(', ')}\n`
+        : '';
+
+    return `Generate a vocabulary learning set of ${count} English words${themeClause}${difficultyClause} for Chinese learners.
+${usedWordsClause}
+━━━ DEFINITIONS (follow New Oxford style) ━━━
+For each word, provide rich definitions like the New Oxford English-Chinese Dictionary:
+- Cover ALL major parts of speech the word has (noun, verb, adjective, etc.)
+- For each part of speech, list the core sense first, then extended/figurative senses
+- "meaningCN": write like a real Chinese dictionary entry — concise, precise, use 【】for domain labels (e.g.【正式】【口语】【比喻】), list multiple senses separated by ；
+- "meaningEN": clear English gloss with usage notes in parentheses, e.g. "(of a person) ...", "(also used figuratively)"
+- Include common collocations or fixed phrases as a separate definition entry where relevant
+- "partOfSpeech": use standard labels: noun / verb / adjective / adverb / phrase
+
+Example of good definitions for "resilience":
+  { "partOfSpeech": "noun", "meaningCN": "①（材料）弹性，回弹力；②（人或组织）适应力，复原力【正式】；③【比喻】在逆境中恢复的能力", "meaningEN": "the capacity to recover quickly from difficulties; (of a material) the ability to spring back into shape" }
+
+━━━ EXAMPLES (3 per word, varied scenarios) ━━━
+For each word, write 3 example sentences from 3 DIFFERENT real-life scenarios:
+casual chat, news report, novel/story, workplace email, student essay, doctor/patient, social media, travel, sports commentary, parent-child conversation.
+
+FORBIDDEN: "She showed great X" / "He demonstrated X" / "X is important". Vary subjects, tenses, structures.
+
+━━━ OUTPUT FORMAT ━━━
+Return ONLY valid JSON (no markdown):
+{
+  "words": [
+    {
+      "word": string,
+      "phonetic": string (IPA),
+      "definitions": [
+        { "partOfSpeech": string, "meaningCN": string, "meaningEN": string }
+      ],
+      "examples": [
+        { "sentence": string, "translation": string, "highlightWord": string },
+        { "sentence": string, "translation": string, "highlightWord": string },
+        { "sentence": string, "translation": string, "highlightWord": string }
+      ]
+    }
+  ],
+  "associations": [
+    { "word1": string, "word2": string, "associationType": "theme"|"semantic"|"root"|"context", "description": string }
+  ],
+  "sentenceChains": [
+    { "sentence": string, "translation": string, "usedWords": [string] }
+  ]
+}
+
+Rules:
+- Exactly ${count} words
+- Each word: 2-4 definition entries covering different parts of speech and senses
+- Each word: exactly 3 examples from 3 different scenarios
+- associations: each word in at least one association
+- sentenceChains: at least 5 entries using 2-4 words each`;
   }
 
   /**
@@ -586,6 +786,63 @@ Return ONLY the JSON array, no additional text.`;
     } catch (error: any) {
       throw new AIServiceError(
         `Failed to parse sentence chains from Claude response: ${error.message}`,
+        'claude',
+        undefined,
+        error
+      );
+    }
+  }
+
+  /**
+   * Parse word list from Claude API response
+   * 
+   * Extracts and validates the complete word list structure including
+   * words, associations, and sentence chains.
+   * 
+   * @param data - Claude API response data
+   * @returns Parsed word list data
+   * @throws AIServiceError if parsing fails
+   */
+  private parseWordListFromResponse(data: ClaudeMessageResponse): {
+    words: WordListGenerationResponse['words'];
+    associations: WordListGenerationResponse['associations'];
+    sentenceChains: WordListGenerationResponse['sentenceChains'];
+  } {
+    try {
+      const content = data.content[0]?.text;
+
+      if (!content) {
+        ClaudeLogger.error('No content in Claude response', { data });
+        throw new Error('No content in API response');
+      }
+
+      // Use extractJSON utility to handle various response formats
+      const parsed = extractJSON(content);
+
+      if (!parsed) {
+        ClaudeLogger.error('Failed to extract JSON from Claude response', { content });
+        throw new Error('Failed to extract JSON from response');
+      }
+
+      // Validate required fields
+      if (!Array.isArray(parsed.words) || !Array.isArray(parsed.associations) || !Array.isArray(parsed.sentenceChains)) {
+        ClaudeLogger.error('Missing required arrays in parsed response', { 
+          keys: Object.keys(parsed),
+          hasWords: Array.isArray(parsed.words),
+          hasAssociations: Array.isArray(parsed.associations),
+          hasSentenceChains: Array.isArray(parsed.sentenceChains)
+        });
+        throw new Error('Response missing required arrays');
+      }
+
+      return {
+        words: parsed.words as WordListGenerationResponse['words'],
+        associations: parsed.associations as WordListGenerationResponse['associations'],
+        sentenceChains: parsed.sentenceChains as WordListGenerationResponse['sentenceChains'],
+      };
+    } catch (error: any) {
+      throw new AIServiceError(
+        `Failed to parse word list from Claude response: ${error.message}`,
         'claude',
         undefined,
         error
