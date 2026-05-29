@@ -223,7 +223,11 @@ export class HttpClient {
           attempt,
         });
 
-        error.message = `Request timeout after ${timeout}ms`;
+        // Create a new error with timeout message instead of modifying the original
+        const timeoutError: any = new Error(`Request timeout after ${timeout}ms`);
+        timeoutError.name = 'AbortError';
+        timeoutError.status = error.status;
+        error = timeoutError;
       }
 
       // Retry logic
