@@ -219,51 +219,7 @@ export function validateEnvConfig(): ValidationResult {
   };
 }
 
-/**
- * Log environment configuration status
- */
-export function logEnvConfigStatus(): void {
-  const validation = validateEnvConfig();
-  const config = getEnvConfig();
-  
-  console.group('🔧 Environment Configuration');
-  
-  console.log(`AI Provider: ${config.aiProvider}`);
-  
-  if (config.aiProvider === 'openai') {
-    console.log(`OpenAI API Key: ${config.openai.apiKey ? '✓ Configured' : '✗ Missing'}`);
-    console.log(`OpenAI Model: ${config.openai.model}`);
-  } else if (config.aiProvider === 'claude') {
-    console.log(`Claude API Key: ${config.claude.apiKey ? '✓ Configured' : '✗ Missing'}`);
-    console.log(`Claude Model: ${config.claude.model}`);
-  } else if (config.aiProvider === 'doubao') {
-    console.log(`Doubao API Key: ${config.doubao.apiKey ? '✓ Configured' : '✗ Missing'}`);
-    console.log(`Doubao Model: ${config.doubao.model}`);
-  } else if (config.aiProvider === 'deepseek') {
-    console.log(`DeepSeek API Key: ${config.deepseek.apiKey ? '✓ Configured' : '✗ Missing'}`);
-    console.log(`DeepSeek Model: ${config.deepseek.model}`);
-  }
-  
-  console.log(`Dictionary API: ${config.dictionaryApiUrl}`);
-  console.log(`Max Retries: ${config.maxApiRetries}`);
-  console.log(`API Timeout: ${config.apiTimeout}ms`);
-  console.log(`Debug Mode: ${config.debugMode ? 'Enabled' : 'Disabled'}`);
-  
-  // Log validation results
-  if (validation.isValid) {
-    console.log('✅ Configuration is valid');
-  } else {
-    console.error('❌ Configuration has errors:');
-    validation.errors.forEach(error => console.error(`  - ${error}`));
-  }
-  
-  if (validation.warnings.length > 0) {
-    console.warn('⚠️ Configuration warnings:');
-    validation.warnings.forEach(warning => console.warn(`  - ${warning}`));
-  }
-  
-  console.groupEnd();
-}
+
 
 /**
  * Get the active AI API configuration based on selected provider

@@ -243,14 +243,12 @@ export class ServiceFactoryImpl implements ServiceFactory {
       const contextAnalyzer = this.getContextAnalyzer();
       const qualityAssessor = this.getQualityAssessor();
       const cacheManager = this.getCacheManager();
-      const config = this.getConfig();
 
       this.enhancedExampleSentenceService = new EnhancedExampleSentenceServiceImpl(
         aiService,
         contextAnalyzer,
         qualityAssessor,
-        cacheManager,
-        config
+        cacheManager
       );
     }
 

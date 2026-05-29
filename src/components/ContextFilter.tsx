@@ -8,7 +8,6 @@
  * Requirements: 8.6
  */
 
-import React from 'react';
 import { ApplicationContext, ContextLabels, ContextColors } from '../types/context';
 
 export interface ContextFilterProps {

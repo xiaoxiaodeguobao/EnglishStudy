@@ -266,7 +266,6 @@ describe('Type Definitions', () => {
           sentenceChains: [],
         }),
         validateAssociations: async () => true,
-        generateSentenceChains: async () => [],
         getUsedWords: async () => [],
       };
 

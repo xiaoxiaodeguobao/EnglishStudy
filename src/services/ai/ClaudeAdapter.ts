@@ -15,8 +15,11 @@ import {
   AIGenerationResponse,
   AIServiceError,
   ApplicationContext,
+  WordListGenerationRequest,
+  WordListGenerationResponse,
 } from './types';
 import { withRetry, RetryExhaustedError } from './RetryHandler';
+import { extractJSON } from './WordListResponseParser';
 
 /**
  * Claude API response structure for messages

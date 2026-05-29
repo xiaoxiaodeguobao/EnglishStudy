@@ -28,18 +28,34 @@ import {
 
 /**
  * Logger utility
+ * Logs are only output when debug mode is enabled in environment config
  */
 class Logger {
+  private static isDebugMode(): boolean {
+    try {
+      const config = getEnvConfig();
+      return config.debugMode;
+    } catch {
+      return false;
+    }
+  }
+
   static info(message: string, context?: Record<string, unknown>): void {
-    console.info(`[${new Date().toISOString()}] [INFO] ${message}`, context || '');
+    if (this.isDebugMode()) {
+      console.info(`[${new Date().toISOString()}] [INFO] ${message}`, context || '');
+    }
   }
 
   static error(message: string, context?: Record<string, unknown>): void {
-    console.error(`[${new Date().toISOString()}] [ERROR] ${message}`, context || '');
+    if (this.isDebugMode()) {
+      console.error(`[${new Date().toISOString()}] [ERROR] ${message}`, context || '');
+    }
   }
 
   static warn(message: string, context?: Record<string, unknown>): void {
-    console.warn(`[${new Date().toISOString()}] [WARN] ${message}`, context || '');
+    if (this.isDebugMode()) {
+      console.warn(`[${new Date().toISOString()}] [WARN] ${message}`, context || '');
+    }
   }
 }
 
@@ -303,37 +319,6 @@ export class WordGeneratorServiceImpl implements WordGeneratorService {
     Logger.info('Association validation result', { rate, isValid });
 
     return isValid;
-  }
-
-  /**
-   * Generate sentence chains using multiple words
-   * Requirements: 3.4, 5.1, 5.2
-   */
-  async generateSentenceChains(words: Word[]): Promise<SentenceChain[]> {
-    Logger.info('Generating sentence chains', { wordCount: words.length });
-
-    const chains: SentenceChain[] = [];
-
-    // Generate at least 3 sentence chains
-    const minChains = 3;
-
-    for (let i = 0; i < minChains && i < words.length - 1; i++) {
-      // Use 2-3 words per chain
-      const wordsInChain = Math.min(2 + Math.floor(Math.random() * 2), words.length - i);
-      const usedWords = words.slice(i, i + wordsInChain);
-      const wordTexts = usedWords.map(w => w.word).join(', ');
-
-      chains.push({
-        id: generateId('chain'),
-        sentence: `This sentence uses the words: ${wordTexts}.`,
-        usedWordIds: usedWords.map(w => w.id),
-        translation: `这个句子使用了这些单词：${wordTexts}。`,
-      });
-    }
-
-    Logger.info('Sentence chains generated', { count: chains.length });
-
-    return chains;
   }
 
   /**

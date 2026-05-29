@@ -7,7 +7,7 @@
 
 import { LearningPlan } from './learningPlan';
 import { Word, WordDefinition, ExampleSentence } from './word';
-import { DailyWordList, WordAssociation, SentenceChain } from './wordList';
+import { DailyWordList, SentenceChain } from './wordList';
 import { LearningProgress, DailyRecord } from './progress';
 
 /**
@@ -28,7 +28,6 @@ export interface LearningPlanService {
 export interface WordGeneratorService {
   generateDailyWords(planId: string, date: Date, count: number): Promise<DailyWordList>;
   validateAssociations(words: Word[]): Promise<boolean>;
-  generateSentenceChains(words: Word[]): Promise<SentenceChain[]>;
   getUsedWords(planId: string): Promise<string[]>;
 }
 

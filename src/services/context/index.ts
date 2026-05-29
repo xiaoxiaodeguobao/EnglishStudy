@@ -5,4 +5,5 @@
  * identifying application contexts for words.
  */
 
-export { ContextAnalyzer, ContextAnalyzerImpl } from './ContextAnalyzer';
+export type { ContextAnalyzer } from './ContextAnalyzer';
+export { ContextAnalyzerImpl } from './ContextAnalyzer';

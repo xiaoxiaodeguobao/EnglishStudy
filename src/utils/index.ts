@@ -14,7 +14,6 @@ export {
 export {
   getEnvConfig,
   validateEnvConfig,
-  logEnvConfigStatus,
   getActiveAIConfig,
   envConfig,
   type EnvConfig,

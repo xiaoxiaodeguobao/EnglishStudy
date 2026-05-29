@@ -8,7 +8,6 @@
  */
 
 import { db, type ExampleCacheEntry, type EnhancedExampleSentence } from '../VocabularyDB';
-import type { StorageService } from '../../types/services';
 
 /**
  * Logger utility for cache operations

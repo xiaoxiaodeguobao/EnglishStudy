@@ -823,9 +823,6 @@ Rules:
   } {
     const content = data.choices[0]?.message?.content;
 
-    // Log the raw response for debugging
-    console.log('[parseWordListFromResponse] raw content:', content);
-
     if (!content) {
       console.error('[parseWordListFromResponse] No content in response. Full data:', JSON.stringify(data));
       throw new GenerationError('AI 返回数据格式无效');

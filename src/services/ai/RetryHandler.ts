@@ -78,7 +78,7 @@ class RetryLogger {
 /**
  * Default retry predicate - retries all errors
  */
-function defaultShouldRetry(error: Error, attempt: number): boolean {
+function defaultShouldRetry(_error: Error, _attempt: number): boolean {
   return true;
 }
 

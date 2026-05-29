@@ -118,22 +118,12 @@ export class ContextAnalyzerImpl implements ContextAnalyzer {
   private async aiBasedAnalysis(word: string): Promise<ContextAnalysisResult> {
     ContextAnalyzerLogger.info('Attempting AI-based context analysis', { word });
 
-    // Generate a single example to get AI's context assessment
-    // We use a neutral context for the request but analyze the response
-    const response = await this.aiService.generateExamples({
+    // Generate a single example to validate AI connectivity
+    await this.aiService.generateExamples({
       word,
       context: 'daily-conversation',
       count: 1,
     });
-
-    // For now, we'll use a simple approach: assume the word is suitable
-    // for daily conversation (since we successfully generated an example)
-    // and apply heuristics for other contexts
-    // 
-    // In a more sophisticated implementation, we could:
-    // 1. Make a specific API call asking the AI to analyze contexts
-    // 2. Generate examples for multiple contexts and see which succeed
-    // 3. Use a specialized prompt for context classification
 
     // Fall back to heuristic analysis with AI validation
     return this.heuristicAnalysis(word);

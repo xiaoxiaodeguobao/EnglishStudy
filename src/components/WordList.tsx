@@ -18,7 +18,7 @@
  * Requirements: 3.2, 11.3
  */
 
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Word } from '../types/word';
 import { WordCard } from './WordCard';

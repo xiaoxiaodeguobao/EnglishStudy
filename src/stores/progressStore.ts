@@ -20,7 +20,7 @@ interface ProgressState {
   clearError: () => void;
 }
 
-export const useProgressStore = create<ProgressState>((set, get) => ({
+export const useProgressStore = create<ProgressState>((set) => ({
   progress: null,
   loading: false,
   error: null,
